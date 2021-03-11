@@ -2,7 +2,7 @@
 node_modules
 /dist
 
-แบบขออนุมัติทำงานและขอเบิกค่าล่วงเวลา_63099.xlsx
+.แบบขออนุมัติทำงานและขอเบิกค่าล่วงเวลา_63099.xlsx
 # local env files
 .env.local
 .env.*.local

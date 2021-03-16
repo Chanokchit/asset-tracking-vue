@@ -2,7 +2,7 @@
   <div>
     <div id="main">
       <div class="fof">
-        <h1>QR-Code ไม่ถูกต้อง </h1>
+        <h1>QR-Code ไม่ถูกต้อง</h1>
       </div>
     </div>
   </div>
@@ -43,7 +43,6 @@ body {
   font-size: 30px;
   display: inline-block;
   padding-right: 12px;
-  animation: type 0.5s alternate infinite;
 }
 
 @keyframes type {

@@ -1,30 +1,32 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import Home from '../views/Home.vue'
+import Information from '../components/information.vue'
+import Location from '../components/update-location.vue'
+import Owner from '../components/update-owner.vue'
+import error from '../components/error.vue'
 
 Vue.use(VueRouter)
 
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home
+    name: 'Information',
+    component: Information
   },
   {
     path: '/test',
-    name: 'About',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
+    name: 'Location',
+    component: Location
+  },
+  {
+    path: '/owner',
+    name: 'Owner',
+    component: Owner
   },
   {
     path: '/error',
     name: 'error',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/error.vue')
+    component: error
   }
 ]
 

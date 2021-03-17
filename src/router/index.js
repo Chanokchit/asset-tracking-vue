@@ -4,6 +4,7 @@ import Information from '../components/information.vue'
 import Location from '../components/update-location.vue'
 import Owner from '../components/update-owner.vue'
 import error from '../components/error.vue'
+import success from '../components/success.vue'
 
 Vue.use(VueRouter)
 
@@ -27,6 +28,11 @@ const routes = [
     path: '/error',
     name: 'error',
     component: error
+  },
+  {
+    path: '/success',
+    name: 'success',
+    component: success
   }
 ]
 

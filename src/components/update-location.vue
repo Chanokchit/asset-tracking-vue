@@ -12,6 +12,11 @@
           </h2>
         <v-spacer/>
       </v-toolbar>
+      <v-form
+        ref="form"
+        v-model="valid"
+        lazy-validation
+      >
       <div class="mx-5">
         <v-row class="mb-n10 mt-5">
           <v-col cols="12" sm="3" md="3" class="mt-2 text-center">
@@ -57,16 +62,18 @@
             <b> Building</b>
           </v-col>
           <v-col cols="12" sm="8" md="8">
-            <v-autocomplete
+            <v-select
               required
-              v-model="asset_data.building_name"
-              :items="arr"
+              v-model="building.building_name"
+              :items="arr_building"
               label="เลือกอาคาร"
               color="teal"
               outlined
               filled
               dense
-            ></v-autocomplete>
+              :rules="[v => !!v || 'Item is required']"
+              @change="getfloor()"
+            ></v-select>
           </v-col>
         </v-row>
         <v-row class="mb-n10 mt-5">
@@ -74,15 +81,18 @@
             <b> Floor</b>
           </v-col>
           <v-col cols="12" sm="8" md="8">
-            <v-autocomplete
-              v-model="asset_data.floor_name"
-              :items="floor_name"
+            <v-select
+              required
+              v-model="floor.floor_name"
+              :items="arr_floor"
               label="เลือกชั้น"
               color="teal"
               outlined
               filled
               dense
-            ></v-autocomplete>
+              :rules="[v => !!v || 'Item is required']"
+              @change="getroom()"
+            ></v-select>
           </v-col>
         </v-row>
         <v-row class="mb-n10 mt-5">
@@ -90,17 +100,19 @@
             <b> Room</b>
           </v-col>
           <v-col cols="12" sm="8" md="8">
-            <v-autocomplete
-              v-model="asset_data.room_name"
+            <v-select
+              v-model="room.room_name"
+              :items="arr_room"
               label="เลือกห้อง"
               color="teal"
-              :items="room_name"
               outlined
               filled
               dense
-            ></v-autocomplete>
+              @change="getroom_id()"
+            ></v-select>
           </v-col>
         </v-row>
+        {{building.building_id +'>>>'+ building.building_name +'>>>'+ floor.floor_id+'>>>' + floor.floor_name+'>>>' + room.room_id+'>>>' + room.room_name}}
         <v-row class="mb-n10 mt-5">
           <v-col cols="12" sm="3" md="3" class="mt-2 text-center">
             <b> Cost center</b>
@@ -127,16 +139,18 @@
             ></v-text-field>
           </v-col>
         </v-row>
+        <!-- {{building_data}} -->
         <div class="text-center my-5">
           <v-btn
             rounded
             block
             color="teal lighten-1"
             dark
-            @click="submit"
+            @click="validate()"
           >submit</v-btn>
         </div>
       </div>
+      </v-form>
     </div>
     <div v-else>
       <a
@@ -157,7 +171,7 @@
             <v-progress-linear
               color="indigo darken-1"
               height="10"
-            indeterminate
+              indeterminate
           ></v-progress-linear>
           </template>
         </v-card>
@@ -171,18 +185,31 @@ import axios from 'axios'
 export default {
   data () {
     return {
+      valid: true,
       loading: false,
-      aa: '',
-      arr: [],
-      pupan: 'pupan post !!',
       resource_name: '',
-      test: [''],
-      isMounted: false,
-      floor_name: [],
-      room: [],
-      room_name: [],
+      arr_building: [],
+      arr_floor: [],
+      arr_room: [],
       status: '',
+      status_submit: '',
       message: '',
+      message_submit: '',
+      building_data: [],
+      floor_data: [],
+      room_data: [],
+      building: {
+        building_id: '',
+        building_name: ''
+      },
+      floor: {
+        floor_id: '',
+        floor_name: ''
+      },
+      room: {
+        room_id: '',
+        room_name: ''
+      },
       asset_data: {
         access_token: '',
         asset_type: '',
@@ -198,40 +225,7 @@ export default {
         room_name: '',
         thing_id: ''
       },
-      key1: '',
-      value1: '',
-      value2: '',
-      value3: '',
-      value4: '',
-      value5: '',
-      value6: '',
-      value7: '',
-      value8: '',
-      value9: '',
-      value10: '',
-      value11: '',
-      value12: '',
-      value13: '',
-      value14: '',
-      value15: '',
-      value16: '',
-      value17: '',
-      value18: '',
-      value19: '',
-      value20: '',
-      value21: '',
-      value22: '',
-      value23: '',
-      value24: '',
-      value25: '',
-      value26: '',
-      value27: '',
-      object: '',
-      enableds: true,
-      token: 'test',
-      info: null,
-      errored: false,
-      responseUser: ''
+      token: ''
     }
   },
   filters: {
@@ -248,12 +242,83 @@ export default {
     })
   },
 
-  created () {
-  },
-
   methods: {
+    validate () {
+      if (this.$refs.form.validate() === false) {
+        alert('false')
+      } else {
+        this.submit()
+      }
+    },
     reserve () {
       this.loading = true
+    },
+    async getfloor () {
+      this.arr_floor = []
+      this.arr_room = []
+      this.floor.floor_id = ''
+      this.floor.floor_name = ''
+      this.room.room_name = ''
+      this.room.room_id = ''
+      for (let i = 0; i < this.building_data.length; i++) {
+        const name = this.building_data[i]
+        if (name.building_name === this.building.building_name) {
+          this.building.building_id = name.building_id
+
+          var floor = await axios
+            .get(
+              'http://203.151.199.181:5002/admin/api/v1/floor/get',
+              {
+                params: {
+                  building_id: this.building.building_id,
+                  'Content-Type': 'application/json'
+                }
+              }
+            ).then((response) => response.data)
+          this.object2 = floor.data
+          this.floor_data = floor.data
+          for (const [key, value] of Object.entries(this.object2)) {
+            console.log(key.floor_name)
+            this.arr_floor.push(value.floor_name)
+          }
+        }
+      }
+    },
+    async getroom () {
+      this.arr_room = []
+      this.room.room_name = ''
+      this.room.room_id = ''
+      for (let i = 0; i < this.floor_data.length; i++) {
+        const name = this.floor_data[i]
+        if (name.floor_name === this.floor.floor_name) {
+          this.floor.floor_id = name.floor_id
+
+          var room = await axios
+            .get(
+              'http://203.151.199.181:5002/admin/api/v1/room/get',
+              {
+                params: {
+                  floor_id: this.floor.floor_id,
+                  'Content-Type': 'application/json'
+                }
+              }
+            ).then((response) => response.data)
+          this.object2 = room.data
+          this.room_data = room.data
+          for (const [key, value] of Object.entries(this.object2)) {
+            console.log(key.room_name)
+            this.arr_room.push(value.room_name)
+          }
+        }
+      }
+    },
+    getroom_id () {
+      for (let i = 0; i < this.room_data.length; i++) {
+        const name = this.room_data[i]
+        if (name.room_name === this.room.room_name) {
+          this.room.room_id = name.room_id
+        }
+      }
     },
     async getDataGetCheck () {
       try {
@@ -275,177 +340,51 @@ export default {
         if (this.status === 'fail') {
           this.$router.push('/error')
         }
-        // var building = await axios
-        //   .get(
-        //     'http://203.151.199.181:5002/admin/api/v1/building'
-        //     // var data = await axios.post('http://203.150.221.207:4000/user/forDoh', // jolly path
-        //   )
-        //   .then((response) => response.data)
-        // console.log(building.data)
-        // this.object1 = building.data
-        // // alert(this.object1)
-        // for (const [key, value] of Object.entries(this.object1)) {
-        //   // alert(value.building_name)
-        //   this.arr.push(value.building_name)
-        //   if (value.building_name === 'OTA') {
-        //     this.floor_name.push(value.floor[0].floor_name)
-        //     this.room = value.floor[0].room
-
-        //     for (const [key, value] of Object.entries(this.room)) {
-        //       console.log(key)
-        //       this.room_name.push(this.test)
-        //       this.room_name.push(value.room_name)
-        //       // this.room_name = value.room_name
-        //     }
-        //   }
-
-        //   if (value.building_name === 'OAI') {
-        //     // alert(value.floor[1].floor_name)
-        //     this.floor_name.push(value.floor[0].floor_name)
-        //     this.room = value.floor[0].room
-        //     for (const [key, value] of Object.entries(this.room)) {
-        //       this.room_name.push(this.test)
-        //       // alert(this.test)
-        //       this.room_name.push(value.room_name)
-        //       console.log(key)
-        //     }
-        //     this.floor_name.push(value.floor[1].floor_name)
-        //     this.room = value.floor[1].room
-
-        //     for (const [key, value] of Object.entries(this.room)) {
-        //       // alert(value.room_name)
-        //       console.log(key)
-        //       this.room_name.push(this.test)
-        //       // alert(this.test)
-        //       this.room_name.push(value.room_name)
-        //       // this.room_name = value.room_name
-        //     }
-        //   }
-
-        //   console.log(key)
-        // }
-
-        // this.object = data.data[0]
-        // console.log(data.data)
-        // // Object.keys(myObj).length
-
-        // for (const [key, value] of Object.entries(this.object)) {
-        //   // this.key1 = key
-        //   // this.value1 = value
-
-        //   if (key === 'cost_center') {
-        //     this.value1 = value
-        //     // alert(typeof (this.value1))
-        //     // alert(this.value1)
-        //   }
-        //   if (key === 'create_date') {
-        //     this.value2 = value
-        //     // alert(this.value2)
-        //   }
-        //   if (key === 'employee_id') {
-        //     this.value3 = value
-        //     // alert(this.value3)
-        //   }
-        //   if (key === 'end_date') {
-        //     this.value4 = value
-        //     // alert(this.value4)
-        //   }
-        //   if (key === 'floor_location') {
-        //     this.value5 = value
-        //     // alert(this.value5)
-        //   }
-        //   if (key === 'ga_return') {
-        //     this.value6 = value
-        //     // alert(this.value6)
-        //   }
-        //   if (key === 'location_name') {
-        //     this.value7 = value
-        //     // alert(this.value7)
-        //   }
-        //   if (key === 'period') {
-        //     this.value8 = value
-        //     //  alert(this.value8)
-        //   }
-        //   if (key === 'purchase_order') {
-        //     this.value9 = value
-        //     //  alert(this.value9)
-        //   }
-        //   if (key === 'remark') {
-        //     this.value10 = value
-        //     // alert(this.value10)
-        //   }
-        //   if (key === 'resource_description') {
-        //     this.value11 = value
-        //     //  alert(this.value11)
-        //   }
-        //   if (key === 'resource_group') {
-        //     this.value12 = value
-        //     //   alert(this.value12)
-        //   }
-        //   if (key === 'resource_name') {
-        //     this.value13 = value
-        //     //  alert(this.value13)
-        //   }
-        //   if (key === 'resource_tag') {
-        //     this.value14 = value
-        //     //  alert(this.value14)
-        //   }
-        //   if (key === 'room_id') {
-        //     this.value15 = value
-        //     // alert(this.value15)
-        //   }
-        //   if (key === 'room_location') {
-        //     this.value16 = value
-        //     // alert(this.value16)
-        //   }
-        //   if (key === 'serial_number') {
-        //     this.value17 = value
-        //     //   alert(this.value17)
-        //   }
-        //   if (key === 'start_date') {
-        //     this.value18 = value
-        //     //  alert(this.value19)
-        //   }
-        //   if (key === 'status_email') {
-        //     this.value19 = value
-        //     //  alert(this.value19)
-        //   }
-        //   if (key === 'thing_id') {
-        //     this.value20 = value
-        //     //  alert(this.value20)
-        //   }
-        //   if (key === 'type') {
-        //     this.value21 = value
-        //     // alert(this.value21)
-        //   }
-        //   if (key === 'user_create') {
-        //     this.value22 = value
-        //     // alert(this.value22)
-        //   }
-        //   if (key === 'value') {
-        //     this.value23 = value
-        //     //  alert(this.value23)
-        //   }
-        //   if (key === 'vendor_name') {
-        //     this.value24 = value
-        //     //  alert(this.value24)
-        //   }
-        //   if (key === 'warranty_enddate') {
-        //     this.value25 = value
-        //     //  alert(this.value25)
-        //   }
-        //   if (key === 'warranty_period') {
-        //     this.value26 = value
-        //     // alert(this.value26)
-        //   }
-        //   if (key === 'warranty_startdate') {
-        //     this.value27 = value
-        //     // alert(this.value27)
-        //   }
-        // }
+        var building = await axios
+          .get(
+            'http://203.151.199.181:5002/admin/api/v1/building/get'
+          )
+          .then((response) => response.data)
+        this.object1 = building.data
+        this.building_data = building.data
+        for (const [key, value] of Object.entries(this.object1)) {
+          console.log(key.building_name)
+          this.arr_building.push(value.building_name)
+        }
       } catch (err) {
         this.$router.push('/error')
         alert(err + this.message)
+      }
+    },
+    async submit () {
+      try {
+        var data = await axios
+          .put(
+            'http://203.151.199.181:5001/api/v1/location/edit',
+            { resource_name: this.resource_name, building: this.building, floor: this.floor, room: this.room },
+            {
+              headers: {
+                access_token: this.asset_data.access_token,
+                'Content-Type': 'application/json'
+              }
+            }
+          ).then((response) => response.data)
+        this.status_submit = data.status
+        this.message_submit = data.message
+        alert('>>>>' + this.status_submit + this.message_submit)
+        if (this.status_submit === 'success') {
+          this.$router.push('/success')
+        } else if (this.message_submit === 'location is in use') {
+          this.building.building_name = ''
+          this.floor.floor_name = ''
+          this.room.room_name = ''
+          alert('location is in use')
+        } else {
+          this.$router.push('/error')
+        }
+      } catch (err) {
+        this.$router.push('/error')
+        alert('>>>>' + err + this.message_submit)
       }
     }
   }
@@ -453,9 +392,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.required label::after {
-    content: "*";
-}
 .button {
     border: none;
     text-decoration: none;
